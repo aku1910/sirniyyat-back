@@ -28,8 +28,30 @@ mongoose.connect(process.env.MONGO_URI)
 app.use(cookieParser());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
+
+// CORS - Production üçün
 app.use(cors({
-  origin: ["http://localhost:3000", "http://localhost:3001"],
+  origin: function (origin, callback) {
+    // Render-də static site, Vercel və localhost-dan request qəbul et
+    const allowedOrigins = [
+      'http://localhost:3000',
+      'http://localhost:3001',
+      /\.vercel\.app$/,  // Bütün Vercel subdomain-ləri
+      /\.onrender\.com$/ // Bütün Render static sites
+    ];
+
+    // Origin yoxdursa (Postman, server-to-server) və ya allowed list-də varsa
+    if (!origin || allowedOrigins.some(allowed => {
+      if (allowed instanceof RegExp) {
+        return allowed.test(origin);
+      }
+      return allowed === origin;
+    })) {
+      callback(null, true);
+    } else {
+      callback(new Error('CORS policy violation'));
+    }
+  },
   credentials: true,
 }));
 
